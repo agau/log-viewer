@@ -1,0 +1,217 @@
+﻿@{
+    ViewBag.Title = "Log Viewer";
+}
+
+<style>
+    pre {
+    white-space: -moz-pre-wrap; /* Mozilla, supported since 1999 */
+    white-space: -pre-wrap; /* Opera */
+    white-space: -o-pre-wrap; /* Opera */
+    white-space: pre-wrap; /* CSS3 - Text module (Candidate Recommendation) http://www.w3.org/TR/css3-text/#white-space */
+    word-wrap: break-word; /* IE 5.5+ */
+}
+
+.has-spinner .fa-spin  {
+  opacity: 0;
+  max-width: 0;
+
+  /*-webkit-transition: opacity 0.25s, max-width 0.45s; 
+  -moz-transition: opacity 0.25s, max-width 0.45s;
+  -o-transition: opacity 0.25s, max-width 0.45s;
+  transition: opacity 0.25s, max-width 0.45s; /* Duration fixed since we animate additional hidden width */*/
+}
+
+.has-spinner.active {
+  cursor:progress;
+}
+
+.has-spinner.active .fa-spin {
+  opacity: 1;
+  max-width: 50px; /* More than it will ever come, notice that this affects on animation duration */
+}
+td.rowDetails {
+    background: url('../Images/details_open.png') no-repeat center center;
+    cursor: pointer;
+}
+tr.shown td.rowDetails {
+    background: url('../Images/details_close.png') no-repeat center center;
+}
+
+</style>
+
+<div class="container-fluid">
+    <div class="form-inline">
+        <div class="form-group">
+            <label for="server">Server:  </label>
+            <select id="server" class="form-control">
+                <option value="DEV">DEV</option>
+                <option value="QA">QA</option>
+                <option value="UAT">UAT</option>
+                <option value="PROD">PROD</option>              
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="resultCnt">Count:  </label>
+                <select id="resultCnt" class="form-control">                                     
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>           
+            </div>
+
+        <div class="form-group">
+            <label for="logger">Logger:</label>
+            <select id="logger" class="form-control">
+                <option value="All">All</option>
+                <option value="ValPortal">ValPortal</option>
+                <option value="Facelift">Facelift</option>
+                <option value="RealtyServiceBus">RealtyServiceBus</option>
+                <option value="RealEc_OrderSync">RealEc_OrderSync</option>              
+            </select>     
+        </div>
+        <div class="form-group">
+            <label for="level">Level:</label>
+            <select id="level" multiple="multiple" class="form-control">
+                <option selected="selected" value="All">All</option>
+                <option value="Exception">Exception</option>
+                <option value="Error">Error</option>
+                <option value="Verbose">Verbose</option>
+                <option value="Info">Info</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="checkbox" id="chkDateTimePicker" />
+            <label for="dateTimePicker">Date Range:</label>
+            <input type="text" id="dateTimePicker" name="daterange"  />                        
+        </div>
+        <div class="form-group">
+            <label for="UniqueId">UniqueID:</label>
+            <input type="text" id="UniqueId" />
+        </div>
+        <button id="btnSearch" class="btn btn-primary has-spinner">
+            <i class="fa fa-refresh fa-spin"></i>
+            Search
+        </button>
+        @*<button class="btn btn-primary" id="btnSearch" type="button">Search</button>*@
+    </div>   
+    <table id="logGrid" class="" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Id</th>
+                <th>Logger</th>
+                <th>Message</th>               
+                <th>Level</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+    </table>
+</div>   
+   
+
+<script type="text/javascript">
+    $(document).ready(function () {
+
+        $('input[name="daterange"]').daterangepicker(
+         {
+             timePicker: true,
+             timePickerIncrement: 1,
+             startDate: moment().subtract(2, 'days'),
+             endDate: moment().subtract(1, 'days')
+         });
+        $('#level').multiselect();
+
+        var env = $('#server option:selected').val();
+        var rowCount = $('#resultCnt option:selected').val();
+        var logger = $('#logger option:selected').val();
+        var level = $('#level option:selected').val();
+        var timeFrom = $('#dateTimePicker').data().daterangepicker.startDate;
+        var timeTo = $('#dateTimePicker').data().daterangepicker.endDate;
+        var uniqueId = $('#UniqueId').val();
+        var useDate = $('#chkDateTimePicker').is(":checked");
+
+        var dateFrom = new Date(timeFrom);
+        var dateTo = new Date(timeTo);
+
+        var grid = $('#logGrid').DataTable({
+            "autoWidth": false,
+            "pageLength": 25,
+            "columnDefs": [
+            { "width": "10%", "targets": 3 }
+            ],
+            "ajax": { 
+                "url" : '/Home/LogResults?',
+                "data": function (d) {
+                    d.environment = $('#server option:selected').val(),
+                    d.rowCount = $('#resultCnt option:selected').val(),
+                    d.logger = $('#logger option:selected').val(),
+                    d.level = $('#level option:selected').val(),
+                    d.dateFrom = $('#dateTimePicker').data().daterangepicker.startDate.toISOString(),
+                    d.dateTo = $('#dateTimePicker').data().daterangepicker.endDate.toISOString(),
+                    d.uniqueId = $('#UniqueId').val(),
+                    d.useDate = $('#chkDateTimePicker').is(":checked")
+            }
+            },
+            "columns": [
+                 {
+                     "className": 'rowDetails',
+                     "orderable": false,
+                     "data": null,
+                     "defaultContent": ''
+                 },
+                { "data": "Id" },
+                { "data": "Logger" },
+                {
+                    "data": "Message"                    
+                },
+                //{ "data": "Exception" },
+                { "data": "Level" },
+                {
+                    "data": "Date"                    
+                }
+            ],                      
+        });
+
+        $('#logGrid tbody').on('click', 'td.rowDetails', function () {
+            var tr = $(this).closest('tr');
+            var row = grid.row(tr);
+
+            if (row.child.isShown()) {
+                // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+            }
+            else {
+                // Open this row
+                //console.log(row.data())
+                row.child(format(row.data())).show();
+                tr.addClass('shown');
+            }
+        });
+
+        $('#btnSearch').click(function () {
+            $(this).toggleClass('active');
+            grid.ajax.reload(function (json) {
+                $('#btnSearch').toggleClass('active');
+            });
+            //grid.columns.adjust().draw();
+        });
+
+          //$('a.has-spinner, button.has-spinner').click(function () {
+          //      $(this).toggleClass('active');
+          //  });
+       
+     
+     });
+ 
+    function format(d) {
+        // `d` is the original data object for the row
+        return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">' +
+            '<tr>' +               
+                '<td><pre>' + d.Exception + '</pre></td>' +
+            '</tr>' +          
+        '</table>';
+    }
+
+</script>
