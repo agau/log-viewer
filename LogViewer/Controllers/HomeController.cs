@@ -31,8 +31,8 @@ namespace LogViewer.Controllers
 			DateTime? toDate = DateTime.Parse(dateTo);
 			Guid logId = Guid.Empty;
 			Guid.TryParse(uniqueId, out logId);
-			String loggerName = logger == "All" ? null : logger;
-			String logLevel = level == "All" ? null : level;
+			string loggerName = logger == "All" ? null : logger;
+			string logLevel = level == "All" ? null : level;
 
 			try
 			{
@@ -49,10 +49,28 @@ namespace LogViewer.Controllers
 				SqlGeneral.ParamBuilder p = new SqlGeneral.ParamBuilder();
 				p.AddParam(SqlDbType.Int, "@RowsReturned", rowCount);
 				p.Parameters[0].Value = rowCount;
-				p.AddParam(SqlDbType.VarChar, "@Logger", loggerName);
-				p.Parameters[1].Value = logger;
-				p.AddParam(SqlDbType.VarChar, "@Level", logLevel);
-				p.Parameters[2].Value = level;					
+
+				if(!String.IsNullOrEmpty(loggerName))
+				{
+					p.AddParam(SqlDbType.VarChar, "@Logger", loggerName);
+					p.Parameters[1].Value = loggerName;
+				}
+				else
+				{
+					p.AddParam(SqlDbType.VarChar, "@Logger", DBNull.Value);
+					p.Parameters[1].Value = DBNull.Value;
+				}
+
+				if (!String.IsNullOrEmpty(logLevel))
+				{
+					p.AddParam(SqlDbType.VarChar, "@Level", logLevel);
+					p.Parameters[2].Value = logLevel;
+				}
+				else
+				{
+					p.AddParam(SqlDbType.VarChar, "@Level", DBNull.Value);
+					p.Parameters[2].Value = DBNull.Value;
+				}									
 
 				if (logId == Guid.Empty)
 				{

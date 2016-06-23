@@ -37,11 +37,19 @@ tr.shown td.rowDetails {
     background: url('../Images/details_close.png') no-repeat center center;
 }
 
+#searchBar {
+    padding:20px;
+}
+
+.inlineFormGroup {
+    padding-right:10px;
+    }
+
 </style>
 
 <div class="container-fluid">
-    <div class="form-inline">
-        <div class="form-group">
+    <div id="searchBar" class="form-inline">
+        <div class="form-group inlineFormGroup">
             <label for="server">Server:  </label>
             <select id="server" class="form-control">
                 <option value="DEV">DEV</option>
@@ -50,7 +58,7 @@ tr.shown td.rowDetails {
                 <option value="PROD">PROD</option>              
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group inlineFormGroup">
             <label for="resultCnt">Count:  </label>
                 <select id="resultCnt" class="form-control">                                     
                     <option value="100">100</option>
@@ -60,7 +68,7 @@ tr.shown td.rowDetails {
                 </select>           
             </div>
 
-        <div class="form-group">
+        <div class="form-group inlineFormGroup">
             <label for="logger">Logger:</label>
             <select id="logger" class="form-control">
                 <option value="All">All</option>
@@ -70,7 +78,7 @@ tr.shown td.rowDetails {
                 <option value="RealEc_OrderSync">RealEc_OrderSync</option>              
             </select>     
         </div>
-        <div class="form-group">
+        <div class="form-group inlineFormGroup">
             <label for="level">Level:</label>
             <select id="level" multiple="multiple" class="form-control">
                 <option selected="selected" value="All">All</option>
@@ -80,14 +88,19 @@ tr.shown td.rowDetails {
                 <option value="Info">Info</option>
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group inlineFormGroup">
             <input type="checkbox" id="chkDateTimePicker" />
             <label for="dateTimePicker">Date Range:</label>
-            <input type="text" id="dateTimePicker" name="daterange"  />                        
+            @*<input type="text" id="dateTimePicker" class="form-control" name="daterange"  />*@ 
+            
+            <div id="dateTimePicker" class="form-control" >
+                <i class="fa fa-calendar"></i>&nbsp;
+                <span></span> <b class="caret"></b>
+            </div>                       
         </div>
-        <div class="form-group">
+        <div class="form-group inlineFormGroup">
             <label for="UniqueId">UniqueID:</label>
-            <input type="text" id="UniqueId" />
+            <input type="text" class="form-control" id="UniqueId" />
         </div>
         <button id="btnSearch" class="btn btn-primary has-spinner">
             <i class="fa fa-refresh fa-spin"></i>
@@ -113,13 +126,19 @@ tr.shown td.rowDetails {
 <script type="text/javascript">
     $(document).ready(function () {
 
-        $('input[name="daterange"]').daterangepicker(
+        $('#dateTimePicker').daterangepicker(
          {
              timePicker: true,
              timePickerIncrement: 1,
              startDate: moment().subtract(2, 'days'),
-             endDate: moment().subtract(1, 'days')
-         });
+             endDate: moment().subtract(1, 'days'),
+             locale: { format: 'MM/DD/YYYY h:mm A'}
+         },
+         formatDate
+         );
+        
+        formatDate(moment().subtract(2, 'days'), moment().subtract(1, 'days'));
+
         $('#level').multiselect();
 
         var env = $('#server option:selected').val();
@@ -138,7 +157,7 @@ tr.shown td.rowDetails {
             "autoWidth": false,
             "pageLength": 25,
             "columnDefs": [
-            { "width": "10%", "targets": 3 }
+            { "width": "35%", "targets": 3 }
             ],
             "ajax": { 
                 "url" : '/Home/LogResults?',
@@ -203,7 +222,11 @@ tr.shown td.rowDetails {
           //  });
        
      
-     });
+    });
+
+    function formatDate(start, end) {
+        $('#dateTimePicker span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+    }
  
     function format(d) {
         // `d` is the original data object for the row
