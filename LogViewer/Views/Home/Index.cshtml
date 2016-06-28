@@ -45,6 +45,11 @@ tr.shown td.rowDetails {
     padding-right:10px;
     }
 
+#logGrid {
+    table-layout:fixed;
+    word-break:break-word;
+}
+
 </style>
 
 <div class="container-fluid">
@@ -71,17 +76,22 @@ tr.shown td.rowDetails {
         <div class="form-group inlineFormGroup">
             <label for="logger">Logger:</label>
             <select id="logger" class="form-control">
-                <option value="All">All</option>
-                <option value="ValPortal">ValPortal</option>
-                <option value="Facelift">Facelift</option>
-                <option value="RealtyServiceBus">RealtyServiceBus</option>
-                <option value="RealEc_OrderSync">RealEc_OrderSync</option>              
+                <option selected="selected" value="All">All</option>
+                <option value="ValPortal">ValPortal</option>            
+                <option value="RealtyServiceBus">RealtyServiceBus</option>                         
+                <option value="RealEc_OrderSync">RealEc_OrderSync</option>            
+                <option value="Amp">Amp</option>                
+                <option value="Vendor">Vendor</option> 
+                <option value="AmpOrderSync">AmpOrderSync</option>   
+                <option value="Val Client Portal">Val Client Portal</option>
+                <option value="OrderAssign">OrderAssign</option>
+                <option value="ProviderAssign">ProviderAssign</option>
             </select>     
         </div>
         <div class="form-group inlineFormGroup">
             <label for="level">Level:</label>
-            <select id="level" multiple="multiple" class="form-control">
-                <option selected="selected" value="All">All</option>
+            <select id="level" multiple="multiple" name="level[]" class="form-control">
+                @*<option selected="selected" value="All">All</option>*@
                 <option value="Exception">Exception</option>
                 <option value="Error">Error</option>
                 <option value="Verbose">Verbose</option>
@@ -139,12 +149,14 @@ tr.shown td.rowDetails {
         
         formatDate(moment().subtract(2, 'days'), moment().subtract(1, 'days'));
 
-        $('#level').multiselect();
-
+        $('#level').multiselect({ includeSelectAllOption: true, allSelectedText: 'All Selected' });
+        $("#level").multiselect('selectAll', false);
+       $(".multiselect-selected-text").html("All");
+      
         var env = $('#server option:selected').val();
         var rowCount = $('#resultCnt option:selected').val();
-        var logger = $('#logger option:selected').val();
-        var level = $('#level option:selected').val();
+        var logger = $('#logger').val();
+        var level = $('#level').val();
         var timeFrom = $('#dateTimePicker').data().daterangepicker.startDate;
         var timeTo = $('#dateTimePicker').data().daterangepicker.endDate;
         var uniqueId = $('#UniqueId').val();
@@ -153,19 +165,16 @@ tr.shown td.rowDetails {
         var dateFrom = new Date(timeFrom);
         var dateTo = new Date(timeTo);
 
-        var grid = $('#logGrid').DataTable({
-            "autoWidth": false,
+        var grid = $('#logGrid').DataTable({            
+            "autoWidth" :false,
             "pageLength": 25,
-            "columnDefs": [
-            { "width": "35%", "targets": 3 }
-            ],
             "ajax": { 
                 "url" : '/Home/LogResults?',
                 "data": function (d) {
                     d.environment = $('#server option:selected').val(),
                     d.rowCount = $('#resultCnt option:selected').val(),
-                    d.logger = $('#logger option:selected').val(),
-                    d.level = $('#level option:selected').val(),
+                    d.logger = $('#logger').val(),
+                    d.level = JSON.stringify($('#level').val()),
                     d.dateFrom = $('#dateTimePicker').data().daterangepicker.startDate.toISOString(),
                     d.dateTo = $('#dateTimePicker').data().daterangepicker.endDate.toISOString(),
                     d.uniqueId = $('#UniqueId').val(),
@@ -177,18 +186,15 @@ tr.shown td.rowDetails {
                      "className": 'rowDetails',
                      "orderable": false,
                      "data": null,
-                     "defaultContent": ''
+                     "defaultContent": '',
+                     "width": "4%"
                  },
-                { "data": "Id" },
-                { "data": "Logger" },
-                {
-                    "data": "Message"                    
-                },
+                { "data": "Id", "width": "6%" },
+                { "data": "Logger", "width": "10%" },
+                { "data": "Message", "width": "40%" },
                 //{ "data": "Exception" },
-                { "data": "Level" },
-                {
-                    "data": "Date"                    
-                }
+                { "data": "Level", "width": "6%" },
+                { "data": "Date", "width": "10%" }
             ],                      
         });
 
@@ -212,9 +218,10 @@ tr.shown td.rowDetails {
         $('#btnSearch').click(function () {
             $(this).toggleClass('active');
             grid.ajax.reload(function (json) {
-                $('#btnSearch').toggleClass('active');
+                $('#btnSearch').toggleClass('active');               
             });
-            //grid.columns.adjust().draw();
+            grid.columns.adjust().draw();
+            
         });
 
           //$('a.has-spinner, button.has-spinner').click(function () {

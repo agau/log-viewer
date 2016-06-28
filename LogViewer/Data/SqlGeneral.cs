@@ -67,6 +67,7 @@ namespace LogViewer.Data
 				cmd.CommandType = CommandType.StoredProcedure;
 			if (parameters != null)
 				cmd.Parameters.AddRange(parameters.ToArray());
+			
 			return cmd.ExecuteReader(CommandBehavior.CloseConnection);
 		}
 

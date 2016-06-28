@@ -4,6 +4,7 @@ using LogViewer.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -31,29 +32,42 @@ namespace LogViewer.Controllers
 			DateTime? toDate = DateTime.Parse(dateTo);
 			Guid logId = Guid.Empty;
 			Guid.TryParse(uniqueId, out logId);
-			string loggerName = logger == "All" ? null : logger;
-			string logLevel = level == "All" ? null : level;
+
+			string loggerNames = logger == "All" ? null : logger;
+			string levels = String.Empty;
+
+			//DataTable logLevels = new DataTable();
 
 			try
 			{
 				StringBuilder sb = new StringBuilder();
+				//sb.Append("CREATE TYPE [dbo].[LogLevel] AS TABLE([Level][nvarchar](50) NULL)");
 				sb.Append("SELECT TOP(@RowsReturned) [Id],[Date],[Level],[Logger],[Message],[Exception],[RemoteHost],[Username],[Browser],[RequestUrl],[UniqueId]");
 				sb.Append(" FROM [Resnet].[dbo].[resnet_log] with(NOLOCK)");
 				sb.Append(" WHERE (@Logger IS NULL OR Logger = @Logger)");
-				sb.Append(" AND (@Level IS NULL OR Level = @Level)");
+				sb.Append(" AND (NOT EXISTS (SELECT stringvalue from iter_stringlist_to_tbl(@Levels)) OR Level IN (SELECT stringvalue from iter_stringlist_to_tbl(@Levels)))");
 				sb.Append(" AND (@DateFrom IS NULL OR Date > @DateFrom)");
 				sb.Append(" AND (@DateTo IS NULL OR Date < @DateTo)");
 				sb.Append(" AND (@UniqueId IS NULL OR Uniqueid = @UniqueId)");
 				sb.Append(" order by Id desc");
 
+				//logLevels.Columns.Add("Level");
+				//List<string> levels = level.Replace('"', ' ').Replace('[', ' ').Replace(']', ' ').Split(',').ToList();
+				//foreach (string _level in levels)
+				//{
+				//	logLevels.Rows.Add(_level);
+				//}
+
+				levels = level.Replace('"', ' ').Replace('[', ' ').Replace(']', ' ').Replace(',', ' ');
+								
 				SqlGeneral.ParamBuilder p = new SqlGeneral.ParamBuilder();
 				p.AddParam(SqlDbType.Int, "@RowsReturned", rowCount);
 				p.Parameters[0].Value = rowCount;
 
-				if(!String.IsNullOrEmpty(loggerName))
+				if(!String.IsNullOrEmpty(loggerNames))
 				{
-					p.AddParam(SqlDbType.VarChar, "@Logger", loggerName);
-					p.Parameters[1].Value = loggerName;
+					p.AddParam(SqlDbType.VarChar, "@Logger", loggerNames);
+					p.Parameters[1].Value = loggerNames;					
 				}
 				else
 				{
@@ -61,16 +75,17 @@ namespace LogViewer.Controllers
 					p.Parameters[1].Value = DBNull.Value;
 				}
 
-				if (!String.IsNullOrEmpty(logLevel))
-				{
-					p.AddParam(SqlDbType.VarChar, "@Level", logLevel);
-					p.Parameters[2].Value = logLevel;
-				}
-				else
-				{
-					p.AddParam(SqlDbType.VarChar, "@Level", DBNull.Value);
-					p.Parameters[2].Value = DBNull.Value;
-				}									
+				//if (!String.IsNullOrEmpty(logLevels))
+			//	{
+					p.AddParam(SqlDbType.VarChar, "@Levels", levels);
+					p.Parameters[2].Value = levels;
+					//p.Parameters[2].TypeName = "[dbo].[LogLevel]";
+				//}
+				//else
+				//{
+				//	p.AddParam(SqlDbType.Structured, "@Levels", DBNull.Value);
+				//	p.Parameters[2].Value = DBNull.Value;
+				//}									
 
 				if (logId == Guid.Empty)
 				{
@@ -111,6 +126,7 @@ namespace LogViewer.Controllers
 				{
 					string messageUniqueId = string.Empty;
 					//int i = 0;
+					
 					while (dr.Read())
 					{
 						ResnetLog log = new ResnetLog();
